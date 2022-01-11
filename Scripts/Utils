@@ -1,0 +1,131 @@
+# This Script will contain all useful functions so the main code is a lot more readable
+# Import Modules
+import random
+from matplotlib.pyplot import imsave, imread
+import matplotlib.pyplot as plt
+import os
+import cv2
+import numpy as np
+import pandas as pd
+
+
+# Self Made Functions
+def createIndex(data, train_percent, val_percent, test_percent) :
+    index = dict()
+    num = int(len(data)*train_percent)
+    random.seed(1)
+    samp = random.sample(range(len(data)), num)
+    
+    index['train'] = samp[int(val_percent*len(samp))+1:] 
+    index['val'] = samp[0:int(val_percent*len(samp))]
+    index['test'] = []
+      
+    for i in range(len(data)) :
+        if i not in index['train'] and i not in index['val'] :
+            index['test'].append(i)
+            
+    return index
+  
+  
+def saveImagesToFolders(data, index, folder, path) :
+    i = 0;
+    for key, value in data.items():
+        # Save in train
+        if i in index['train'] :
+          imsave(path + 'train/' + folder + key, value)
+    
+        # Save in val
+        if i in index['val'] :
+          imsave(path + 'val/' + folder + key, value)
+    
+        # Save in test
+        if i in index['test'] :
+          imsave(path + 'test/' + folder + key, value)
+        i = i+1
+
+    print('Done Saving')
+
+
+def plotLoss(data) :
+    plt.plot(data['loss'], label='Training Loss')
+    plt.plot(data['val_loss'], label='Validation Loss')
+    plt.ylabel('Binary Cross Entropy Loss')
+    plt.xlabel('Epochs')
+    plt.title('Loss Curve')
+    plt.legend()
+    plt.show()
+    
+def plotAccuracy(data) :
+    plt.plot(data['accuracy'], label='Training Accuracy')
+    plt.plot(data['val_accuracy'], label='Validation Accuracy')
+    plt.ylabel('Accuracy')
+    plt.xlabel('Epochs')
+    plt.title('Accuracy Curve')
+    plt.legend()
+    plt.show()
+    
+    
+def getTestData(path) :
+    data = dict()
+    bkl = []
+    nv = []
+    mel = []
+    bklPath = path + '/bkl/'
+    melPath = path + '/mel/'
+    nvPath = path + '/nv/'
+    
+    for filename in os.listdir(bklPath) :
+        bkl.append(np.array(imread(bklPath + filename)))
+        
+    for filename in os.listdir(melPath) :
+        mel.append(np.array(imread(melPath + filename)))
+        
+    for filename in os.listdir(nvPath) :
+        nv.append(np.array(imread(nvPath + filename)))
+        
+    data['bkl'] = bkl
+    data['nv'] = nv
+    data['mel'] = mel
+    
+    return data
+    
+    
+def getPredictions(model, shape, path) :
+    classPred = list()
+    for filename in os.listdir(path) :
+        
+        img = np.array(imread(path + filename))
+        img = cv2.resize(img, shape[0:2], interpolation=cv2.INTER_LINEAR)
+        img = img.reshape(shape)
+        img = np.expand_dims(img, axis=0)
+        
+        pred = model.predict(img)
+        prob = np.max(pred)
+        loc = np.where(pred==prob)
+        loc = loc[1]
+        classPred.append(labelPred(loc))
+        
+    print('Done Class Predictions')    
+    return classPred
+    
+    
+def labelPred(loc) :
+    label = ''
+    if loc == 0 :
+        label = 'bkl'
+    elif loc == 1 :
+        label = 'mel'
+    elif loc == 2 :
+        label = 'nv'
+        
+    return label
+    
+
+# make sure to check it again
+def indexCreation(data, train_percentage) :
+    samp = list(range(len(data)))
+    samp = random.sample(samp, len(samp))
+    
+    index = samp[0:int(train_percentage*len(data))]
+    return index
+    
