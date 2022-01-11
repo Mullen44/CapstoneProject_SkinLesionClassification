@@ -1,0 +1,41 @@
+# This script contains the outline of all models
+
+# import modules
+import tensorflow as tf
+from tensorflow.keras.applications import ResNet50, VGG16, VGG19, InceptionV3, InceptionResNetV2
+
+
+
+def get_model(model_choice='ResNet50', load_weights='imagenet', include_top=False) :
+    
+    global_average_layer = tf.keras.layers.GlobalAveragePooling2D()
+    prediction_layer = tf.keras.layers.Dense(3)
+    
+    if model_choice == 'ResNet50' :
+        base_model = ResNet50(input_shape=(224,224,3), include_top=include_top, weights=load_weights)
+        
+        inputs = tf.keras.Input(shape=(224, 224, 3))
+        x = tf.keras.applications.resnet50.preprocess_input(inputs)
+        x = base_model(x, training=False)
+    
+    if model_choice == 'VGG16' :
+        base_model = VGG16(input_shape=(224,224,3), include_top=include_top, weights=load_weights)
+        
+        inputs = tf.keras.Input(shape=(224, 224, 3))
+        x = tf.keras.applications.vgg16.preprocess_input(inputs)
+        x = base_model(x, training=False)
+        
+    if model_choice == 'InceptionResNetV2' :
+        base_model = InceptionResNetV2(input_shape=(299,299,3), include_top=include_top, weights = load_weights)
+        
+        inputs = tf.keras.Input(shape=(299, 299, 3))
+        x = tf.keras.applications.inception_resnet_v2.preprocess_input(inputs)
+        x = base_model(x, training=False)
+        
+        
+    x = global_average_layer(x)
+    x = tf.keras.layers.Dropout(0.2)(x)
+    outputs = prediction_layer(x)
+    model = tf.keras.Model(inputs, outputs)    
+        
+    return model
